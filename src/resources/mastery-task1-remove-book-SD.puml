@@ -1,0 +1,31 @@
+@startuml
+title Remove Book
+actor Client
+participant Controller
+participant RemoveBookFromCatalogActivity
+participant CatalogDao
+database DynamoDb
+activate Client
+Client -> Controller: DELETE /books/{id}
+activate Controller
+Controller -> RemoveBookFromCatalogActivity: execute (RemoveBookFromCatalogRequest request)
+
+activate RemoveBookFromCatalogActivity
+RemoveBookFromCatalogActivity -> CatalogDao: removeBookFromCatalog (String bookId)
+activate CatalogDao
+CatalogDao -> DynamoDb: delete
+alt if BookId does not exist
+CatalogDao <-- DynamoDb
+RemoveBookFromCatalogActivity <-- CatalogDao: throws BookNotFoundException
+Controller <-- RemoveBookFromCatalogActivity: null
+Client <-- Controller: 4xx error
+else continue
+end
+CatalogDao <-- DynamoDb: Book
+RemoveBookFromCatalogActivity <-- CatalogDao: RemoveBookFromCatalogResponse
+deactivate CatalogDao
+Controller <-- RemoveBookFromCatalogActivity: Book
+deactivate RemoveBookFromCatalogActivity
+Client <-- Controller: 400 response
+deactivate Controller
+@enduml
